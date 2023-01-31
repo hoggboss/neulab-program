@@ -1,0 +1,256 @@
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.Graphics; 
+import java.awt.Color;
+import java.awt.Dimension;
+
+import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.KeyStroke;
+import javax.swing.JTextField;
+import javax.swing.event.*;
+import javax.swing.text.*;
+
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeEvent;
+import java.text.*;
+
+public class NeuronAnalysis extends JFrame implements MouseListener, MouseMotionListener, KeyListener, PropertyChangeListener{
+  static GenerateDisplay graphs;
+  static int maxlen, maxwid, mx, my, mb;
+  static int binWidth;
+  static boolean [] keys;
+  static JPanel panel;
+  static JButton start;
+  static JMenuBar menubar;
+  static JFormattedTextField enterBinWid;
+  static NumberFormat binWidFormat;
+  static File files;
+  static boolean filesChosen;
+  
+  public NeuronAnalysis() throws IOException{
+    super("Neuron Analysis");
+    keys = new boolean[2000];
+    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    this.maxlen = (int)screenSize.getWidth();
+    this.maxwid = (int)screenSize.getHeight();
+    this.filesChosen = false;
+    this.binWidth = 5;
+    this.graphs = new GenerateDisplay(50,50,binWidth);
+    initUI();
+    //this.graphs = new GenerateDisplay(50,50);
+    setSize(maxlen, maxwid);
+    setLocationRelativeTo(null);
+    setDefaultCloseOperation(EXIT_ON_CLOSE);
+    setVisible(true);
+    addMouseListener(this);
+    addKeyListener(this);
+    addMouseMotionListener(this);
+  }
+
+  public void initUI() throws IOException{
+    panel = new JPanel();
+    panel.setLayout(new FlowLayout());
+    
+    binWidFormat = NumberFormat.getNumberInstance();
+    enterBinWid = new JFormattedTextField(binWidFormat);
+    enterBinWid.setValue(new Integer(binWidth));
+    enterBinWid.setColumns(5);
+    enterBinWid.addPropertyChangeListener("value", this);
+    
+    JButton start = new JButton("Start");
+    //start.setBounds(50, 60, 80, 30);
+    start.setToolTipText("Begin Analysis");
+    start.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent event) {
+        System.exit(0);
+      }
+    });
+    
+    panel.add(start);
+    panel.add(enterBinWid);
+    setJMenuBar(createMenuBar(panel));
+    getContentPane().add(panel);
+
+  }
+  
+  public void propertyChange(PropertyChangeEvent e){
+        Object source = e.getSource();
+        if (source == enterBinWid){
+            binWidth = ((Number)enterBinWid.getValue()).intValue();
+            //graphs = new GenerateDisplay(50,50,binWidth);
+            //graphs.resetBinWidth(binWidth);
+            //resetPSTHBin();
+	}
+        /*} else if (source == rateField) {
+            rate = ((Number)rateField.getValue()).doubleValue();
+        } else if (source == numPeriodsField) {
+            numPeriods = ((Number)numPeriodsField.getValue()).intValue();
+        }*/
+        //double payment = computePayment(amount, rate, numPeriods);
+        //paymentField.setValue(new Double(payment));
+    }
+
+  public void resetPSTHBin() throws IOException{
+	if (graphs.getPSTHWid()!=binWidth){
+		graphs.resetBinWidth(binWidth);
+	}
+  }
+
+  private JMenuBar createMenuBar(JPanel panel){
+    menubar = new JMenuBar();
+    final JLabel statusbar = new JLabel("File Selection");
+    JMenu file = new JMenu("File");
+    file.setMnemonic(KeyEvent.VK_F);
+    JMenu edit = new JMenu("Edit");
+    edit.setMnemonic(KeyEvent.VK_E);
+    JMenu analyze = new JMenu("Analyze");
+    analyze.setMnemonic(KeyEvent.VK_A);
+    JMenu help = new JMenu("Help");
+    help.setMnemonic(KeyEvent.VK_H);
+    
+    JMenu imp = new JMenu("Import");
+    imp.setMnemonic(KeyEvent.VK_I);
+    JMenuItem newsf = new JMenuItem("Import files...");
+    JMenuItem bookm = new JMenuItem("Import bookmarks...");
+    JMenuItem mail = new JMenuItem("Import mail...");
+    imp.add(newsf);
+    imp.add(bookm);
+    imp.add(mail);
+    JMenuItem fileNew = new JMenuItem("New");
+    fileNew.setMnemonic(KeyEvent.VK_N);
+    fileNew.setToolTipText("Clear files and begin new analysis");
+    JMenuItem fileOpen = new JMenuItem("Open");
+    fileOpen.setMnemonic(KeyEvent.VK_O);
+    fileOpen.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent ae) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setMultiSelectionEnabled(true);
+        int option = chooser.showOpenDialog(NeuronAnalysis.this);
+        if (option == JFileChooser.APPROVE_OPTION) {
+          File[] sf = chooser.getSelectedFiles();
+          String filelist = "nothing";
+          if (sf.length > 0) filelist = sf[0].getName();
+          for (int i = 1; i < sf.length; i++) {
+            filelist += ", " + sf[i].getName();
+          }
+          statusbar.setText("You chose " + filelist);
+        }
+        else {
+          statusbar.setText("You canceled.");
+        }
+      }
+    });
+    JMenuItem fileSave = new JMenuItem("Save");
+    fileSave.setMnemonic(KeyEvent.VK_S);
+    JMenuItem fileQuit = new JMenuItem("Quit");
+    fileQuit.setMnemonic(KeyEvent.VK_C);
+    fileQuit.setToolTipText("Exit application");
+    fileQuit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W,ActionEvent.CTRL_MASK));
+    fileQuit.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent event) {
+        System.exit(0);
+      }
+    });
+    
+    file.add(fileNew);
+    file.add(fileOpen);
+    file.add(fileSave);
+    file.addSeparator();
+    file.add(imp);
+    file.addSeparator();
+    file.add(fileQuit);
+    
+    menubar.add(file);
+    menubar.add(edit);
+    menubar.add(analyze);
+    menubar.add(help);
+    
+    panel.add(statusbar);
+    return menubar;
+  }
+
+  //public 
+
+  public void mousePressed (MouseEvent e){
+     //mx = e.getX();
+     //my = e.getY();
+     mb = e.getButton();
+     //System.out.println("mx="+mx+", my="+my);
+  }
+  public void mouseMoved (MouseEvent e){
+     mx = e.getX();
+     my = e.getY();
+  }
+  public void mouseEntered(MouseEvent e){}
+  public void mouseExited(MouseEvent e){}
+  public void mouseClicked(MouseEvent e){}
+  public void mouseReleased(MouseEvent e){
+        mb=0;
+  }
+  public void mouseDragged(MouseEvent e){
+     mx = e.getX();
+     my = e.getY();
+     mb = e.getButton();
+  }
+
+  public void keyTyped(KeyEvent e){}
+  public void keyPressed(KeyEvent e){
+    keys[e.getKeyCode()] = true;
+  }
+  public void keyReleased(KeyEvent e){
+    keys[e.getKeyCode()] = false;
+  }
+
+  
+  public void move() throws IOException{
+    resetPSTHBin();
+    graphs.move(mx,my,mb);
+    //repaint();
+  }
+  
+  public void paint(Graphics g){
+    super.paint(g);
+    g = graphs.displayGraphs(g);
+  }
+  
+  public static void delay(long len){
+    try{
+      Thread.sleep(len);
+     }
+    catch(InterruptedException ex){
+      System.out.println(ex);
+     }
+  }
+  
+  public static void main(String[] args) throws IOException{
+    /*SwingUtilities.invokeLater(new Runnable(){
+      @Override
+      public void run(){
+        NeuronAnalysis frame = new NeuronAnalysis();
+ //frame.move();
+ //frame.repaint();
+      }
+    });*/
+    NeuronAnalysis frame = new NeuronAnalysis();
+    while (true){
+      frame.move();
+      frame.repaint();
+      delay(100);
+    }
+  }
+}
+

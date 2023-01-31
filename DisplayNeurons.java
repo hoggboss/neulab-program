@@ -1,0 +1,836 @@
+import javax.swing.*;
+import java.awt.event.*;
+import java.util.*;
+import java.awt.*;
+import java.io.*;
+
+public class DisplayNeurons extends JFrame implements MouseListener, MouseMotionListener, KeyListener{
+  static int numr, widthr, hLineY, DRlLineX, DRrLineX, rLineX, lLineX, lLineY, maxlen, maxwid, xLeft,yLeft,trans,psthlen, psthwid,psthbinX, psthbinY, num, width,totTime,maxAP,minSwep;
+  static int xLeft3,xLeft2,yLeft2,yLeft3,psthlen2, width2,psthwid2,psthbinX2, maxSwep;
+  static double num2, psthbinY2, psthbinXr, psthbinYr;
+  static Image dbImage;
+  static Graphics dbg;
+  static boolean [] keys;
+  static int mb,mx,my,mx0,my0;
+  static Color color;
+  static ArrayList <Integer> lowpsthNeu;
+  static ArrayList <Integer> highpsthNeu;
+  static ArrayList <Double> lowpsthRateNeu;
+  static ArrayList <Double> highpsthRateNeu;
+  static int numNeurons;
+  static int[] neuMaxSwep;
+  static int dotSize, lowPSTHCount, highPSTHCount,lowPSTHRate, highPSTHRate, lowDRCount, highDRCount;
+  static int lowPSTHTot, highPSTHTot, lowDRTot, highDRTot, lowPSTHTotr, highPSTHTotr;
+  static double[][] lowDR;
+  static double[][] highDR;
+  static double peakLatencyLow, peakLatencyHigh,maxAPRate,maxDRTime, lowPSTHPerc, highPSTHPerc, lowDRPerc, highDRPerc;
+  static int yWidth;
+  static float[] X;
+  static float[] Y;
+  static Font f, heading;
+  static String xAxis,yAxis;
+
+  static ArrayList<psthClass> neurons;
+  static psthClass neuron;  
+
+  public DisplayNeurons() throws IOException{
+     super("DB Graphics"); 
+     keys = new boolean[2000];
+     maxlen = 1500;
+     maxwid = 800;
+     dotSize=2;
+     f = new Font("Eurostile",Font.BOLD,8);
+     heading = new Font("Eurostile",Font.BOLD,10);
+
+     neurons = new ArrayList<psthClass>();
+
+     psthlen = 400;
+     psthwid = 360;
+     psthlen2 = psthlen;
+     psthwid2 = psthwid;
+
+     xLeft=10;
+     yLeft=maxwid-10;
+
+     xLeft2=xLeft+psthlen+20;
+     yLeft2=yLeft;//maxwid-10;
+
+     trans = 150;
+
+     lLineX = xLeft;
+     rLineX = xLeft + psthlen;
+     DRlLineX = xLeft+psthlen+20;
+     DRrLineX = DRlLineX + psthlen;
+     width=5;
+     width2=5;
+     widthr=1;
+     yWidth=10;
+     totTime = 250;
+     maxAP = 200;
+     maxAPRate = 1000;
+     minSwep = 200;
+     Scanner kb = new Scanner(System.in);
+     Scanner infile1 = new Scanner(new BufferedReader(new FileReader("260314_10_Snip_TankSortChirag.csv")));
+     Scanner infile4 = new Scanner(new BufferedReader(new FileReader("170414_185_Snip_TankSortChirag.csv")));
+     Scanner infile2 = new Scanner(new BufferedReader(new FileReader("170414_180_Snip_TankSortChirag.csv")));
+     Scanner infile3 = new Scanner(new BufferedReader(new FileReader("170414_190_Snip_TankSortChirag.csv")));    
+
+     num = totTime/width;
+     psthClass neu1 = new psthClass(width,totTime,maxAP,minSwep,infile1);
+     psthClass neu2 = new psthClass(width,totTime,maxAP,minSwep,infile2);
+     psthClass neu3 = new psthClass(width,totTime,maxAP,minSwep,infile3);
+     psthClass neu4 = new psthClass(width,totTime,maxAP,minSwep,infile4);
+
+     neurons.add(neu1);
+     neurons.add(neu2);
+     neurons.add(neu3);
+     neurons.add(neu4);
+     numNeurons = 2;//neurons.size();
+     maxDRTime = totTime/1000.0;//maxArray(DR1);
+     num2 = totTime/width2;
+     numr = totTime/widthr;
+
+     psthbinX = psthlen/num;
+     psthbinX2 = (int)((float)(psthlen2+0.0)/(float)(num2+0.0)); //psthlen2/num2;
+     psthbinY2 = ((double)(psthwid2+0.0)/(double)(maxSwep+0.0));
+     //psthbinXr = ((double)(psthlen+0.0)/(double)(numr+0.0));
+
+     addMouseListener(this);
+     addKeyListener(this);
+     addMouseMotionListener(this);
+     setSize(maxlen,maxwid);
+     setVisible(true);
+     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+    
+  public void mousePressed (MouseEvent e){
+     //mx = e.getX();
+     //my = e.getY();
+     mb = e.getButton();
+     //System.out.println("mx="+mx+", my="+my);
+  }
+  public void mouseMoved (MouseEvent e){
+     mx = e.getX();
+     my = e.getY();
+  }
+  public void mouseEntered(MouseEvent e){}
+  public void mouseExited(MouseEvent e){}
+  public void mouseClicked(MouseEvent e){}
+  public void mouseReleased(MouseEvent e){
+     	mb=0;
+  }
+  public void mouseDragged(MouseEvent e){
+     mx = e.getX();
+     my = e.getY();
+     mb = e.getButton();
+  }
+  
+  public void keyTyped(KeyEvent e){}
+  public void keyPressed(KeyEvent e){
+    keys[e.getKeyCode()] = true;
+  }
+  public void keyReleased(KeyEvent e){
+    keys[e.getKeyCode()] = false;
+  }
+  
+  public static void delay(long len){
+    try{
+      Thread.sleep(len);
+     }
+    catch(InterruptedException ex){
+      System.out.println(ex);
+     }
+  }
+
+  public static boolean MouseCollide(int x,int y,int l,int h){
+     if (mx>x&&mx<(x+l)){
+      if (my>y&&my<(y+h)){
+       return true;
+      }
+     }
+     return false;
+  }
+ 
+  public void resetGraphPos(){
+	xLeft = 15;
+	yLeft = maxwid - 15;
+	xLeft2 = xLeft + 20 + psthlen;
+	xLeft3 = xLeft2 + 20 + psthlen;
+	yLeft2 = yLeft;
+	yLeft3 = yLeft;
+  }
+  
+  public void move(){
+	for (int i=0; i<neurons.size();i++){
+		neuron = neurons.get(i);
+		lLineX = neuron.getlLineX();
+		rLineX = neuron.getrLineX();
+		hLineY = neuron.gethLineY();
+		DRlLineX = neuron.getDRlLineX();
+		DRrLineX = neuron.getDRrLineX();
+		resetGraphPos();
+        	if (i>=0 && i<1){
+                	xLeft=xLeft+(40+psthwid+psthwid2)*i;
+                	xLeft2=xLeft+psthlen+20;
+        	}
+        	if (i>=1 && i<=2){
+                	xLeft=xLeft+(40+psthwid+psthwid2)*(i-1);
+                	xLeft2=xLeft+psthlen+20;
+                	yLeft = yLeft-psthwid-30;
+                	yLeft2 = yLeft;
+        	}
+
+		if (mb==1){
+			if (MouseCollide(lLineX+xLeft-5,yLeft-psthwid,10,psthwid) && !neuron.getDraggingRight() && !neuron.getDRDraggingRight() && !neuron.getDRDraggingLeft()){
+        		//if (mb==1){
+				neuron.setlLineX(psthbinX*((mx-xLeft)/psthbinX));
+				neuron.setDraggingLeft(true);
+				neuron.setDraggingRight(false);
+				neuron.setDRDraggingLeft(false);
+                                neuron.setDRDraggingRight(false);
+        		//}
+    			}
+			if (MouseCollide(rLineX+xLeft-5,yLeft-psthwid,10,psthwid) && !neuron.getDraggingLeft() && !neuron.getDRDraggingRight() && !neuron.getDRDraggingLeft()){
+                        //if (mb==1){
+                                neuron.setrLineX(psthbinX*((mx-xLeft)/psthbinX));
+				neuron.setDraggingLeft(false);
+                                neuron.setDraggingRight(true);
+				neuron.setDRDraggingLeft(false);
+                                neuron.setDRDraggingRight(false);
+                        //}
+                	}
+			if (MouseCollide(DRrLineX+xLeft2-5,yLeft2-psthwid,10,psthwid) && !neuron.getDRDraggingLeft() && !neuron.getDraggingRight() && !neuron.getDraggingLeft()){
+                        //if (mb==1){
+                                neuron.setDRrLineX(mx-xLeft2);
+                                neuron.setDRDraggingLeft(false);
+                                neuron.setDRDraggingRight(true);
+                                neuron.setDraggingLeft(false);
+                                neuron.setDraggingRight(false);
+                        //}
+                        }
+			if (MouseCollide(DRlLineX+xLeft2-5,yLeft2-psthwid,10,psthwid) && !neuron.getDRDraggingRight() && !neuron.getDraggingRight() && !neuron.getDraggingLeft()){
+                        //if (mb==1){
+                                neuron.setDRlLineX(mx-xLeft2);
+                                neuron.setDRDraggingLeft(true);
+                                neuron.setDRDraggingRight(false);
+                                neuron.setDraggingLeft(false);
+                                neuron.setDraggingRight(false);
+                        //}
+                        }
+
+
+		}
+		if (neuron.getDraggingLeft()){
+			//neuron.setlLineX(psthbinX*((mx-xLeft)/psthbinX));
+			/*if (mx>(xLeft+psthlen)){
+                             	neuron.setlLineX(psthlen);
+                       	}*/
+                       	if(mx<xLeft){
+                               	neuron.setlLineX(0);
+                       	}
+			else if(mx>(xLeft+rLineX-psthbinX)){
+				neuron.setlLineX(rLineX-psthbinX);
+			}
+			else{
+				neuron.setlLineX(psthbinX*((mx-xLeft)/psthbinX));
+			}
+		}
+		else if (neuron.getDraggingRight()){
+			//neuron.setrLineX(psthbinX*((mx-xLeft)/psthbinX));
+			if (mx>(xLeft+psthlen)){
+                                neuron.setrLineX(psthlen);
+                        }
+                        /*if(mx<xLeft){
+                                neuron.setrLineX(0);
+                        }*/
+			else if(mx<(xLeft+lLineX+psthbinX)){
+				neuron.setrLineX(lLineX+psthbinX);
+			}
+			else{
+				neuron.setrLineX(psthbinX*((mx-xLeft)/psthbinX));
+			}
+		}
+		else if (neuron.getDRDraggingLeft()){
+                        if(mx<xLeft2){
+                                neuron.setDRlLineX(0);
+                        }
+                        else if(mx>(xLeft2+DRrLineX-1-psthbinX/width)){
+                                neuron.setDRlLineX(DRrLineX-psthbinX/width);
+                        }
+                        else{
+                                neuron.setDRlLineX(mx-xLeft2);
+                        }
+                }
+		else if (neuron.getDRDraggingRight()){
+                        if (mx>(xLeft2+psthlen)){
+                                neuron.setDRrLineX(psthlen);
+                        }
+                        else if(mx<(xLeft2+DRlLineX+1+psthbinX/width)){
+                                neuron.setDRrLineX(DRlLineX+psthbinX/width);
+                        }
+                        else{
+                                neuron.setDRrLineX(mx-xLeft2);
+                        }
+                }
+		if (mb==0){
+			neuron.setDraggingRight(false);
+			neuron.setDraggingLeft(false);
+			neuron.setDRDraggingLeft(false);
+                        neuron.setDRDraggingRight(false);
+		}
+	}
+
+  }
+
+  public Graphics drawPSTH(Graphics gp,int k){
+	neuron = neurons.get(k);
+        lowpsthNeu = neuron.getLowPSTH();
+        highpsthNeu = neuron.getHighPSTH();
+	lowpsthRateNeu = neuron.getLowPSTHRate();
+	highpsthRateNeu = neuron.getHighPSTHRate();
+        lowDR = neuron.getLowDotRaster();
+        highDR = neuron.getHighDotRaster();
+        maxSwep = neuron.getMaxSwep();
+        maxAP = (int)(max((float)(maxList(lowpsthNeu)),(float)(maxList(highpsthNeu))));
+	maxAPRate = (max((float)(maxDoubleList(lowpsthRateNeu)),(float)(maxDoubleList(highpsthRateNeu))));
+	maxAPRate = 50*(((int)(maxAPRate)+49)/50);//100.0*((int)(maxAPRate)/100);
+	peakLatencyLow = maxDoubleListPos(lowpsthRateNeu);//maxListPos(lowpsthNeu);
+	peakLatencyHigh = maxDoubleListPos(highpsthRateNeu);//maxListPos(highpsthNeu);	
+	peakLatencyLow = peakLatencyLow*width;
+	peakLatencyHigh = peakLatencyHigh*width;
+	maxAP=round(maxAP);
+	psthbinY = (int)((float)(psthwid+0.0)/(float)(maxAP+0.0));
+        psthbinY2 = ((double)(psthwid2+0.0)/(double)(maxSwep+0.0));
+	psthbinYr = ((double)(psthwid+0.0)/(double)(maxAPRate+0.0));
+	numr = (int)max( (float)(finalListPos(lowpsthRateNeu)), (float)(finalListPos(highpsthRateNeu)) );
+	psthbinXr = ((double)(psthlen+0.0)/(double)(numr+0.0));
+	
+	resetGraphPos();
+
+        if (k>=0 && k<1){
+                xLeft=xLeft+(40+psthwid+psthwid2)*k;
+                xLeft2=xLeft+psthlen+20;
+		xLeft3=xLeft2+psthlen+20;
+        }
+	if (k>=1 && k<2){
+		xLeft=xLeft+(40+psthwid+psthwid2)*(k-1);
+                xLeft2=xLeft+psthlen+20;
+		xLeft3=xLeft2+psthlen+20;
+		yLeft = yLeft-psthwid-30;
+		yLeft2 = yLeft;
+		yLeft3 = yLeft;
+	}
+
+        gp.setColor(new Color(0,0,0));
+	gp.setFont(heading);
+	gp.drawString("LOW-f PEAK LATENCY: "+(int)(peakLatencyLow)+"ms",xLeft+psthlen*3+50,yLeft-psthwid+15);
+	gp.drawString("HIGH-f PEAK LATENCY: "+(int)(peakLatencyHigh)+"ms",xLeft+psthlen*3+50,yLeft-psthwid+30);
+	gp.drawLine(xLeft,yLeft,xLeft+psthlen,yLeft);
+        gp.drawLine(xLeft,yLeft,xLeft,yLeft-psthwid);
+        gp.drawRect(xLeft-10,yLeft-psthwid-10,psthlen+20,psthwid+20);
+        gp.drawLine(xLeft2,yLeft2,xLeft2+psthlen2,yLeft2);
+        gp.drawLine(xLeft2,yLeft2,xLeft2,yLeft2-psthwid2);
+        gp.drawRect(xLeft2-10,yLeft2-psthwid2-10,psthlen+20,psthwid+20);
+	
+	gp.drawLine(xLeft3,yLeft3,xLeft3+psthlen,yLeft3);
+        gp.drawLine(xLeft3,yLeft3,xLeft3,yLeft3-psthwid);
+        gp.drawRect(xLeft3-10,yLeft3-psthwid-10,psthlen+20,psthwid+20);
+	gp.setFont(f);
+
+	gp.setColor(new Color(100,100,100));
+        for (int i=5;i<=maxAP;i+=5){
+	    //gp.setColor(new Color(100,100,100));
+            gp.drawLine(xLeft,yLeft-psthbinY*i,psthlen+xLeft,yLeft-psthbinY*i);
+            if (i%10==0){
+	    	//gp.setFont(f);
+            	gp.setColor(Color.black);
+            	yAxis = ""+(i);
+            	gp.drawLine(xLeft-3,yLeft-psthbinY*i,xLeft+3,yLeft-psthbinY*i);
+            	gp.drawString(yAxis,xLeft-10,yLeft-psthbinY*i);
+	    	gp.setColor(new Color(100,100,100));
+	    }
+	}
+	//gp.setColor(new Color(100,100,100));
+        for (int i=0;i<=num;i++){
+		if (i!=0){
+			gp.drawLine(xLeft + psthbinX*i,yLeft,xLeft+psthbinX*i,yLeft-maxAP*psthbinY);
+        	}
+		if (i%10==0){
+                	gp.setColor(Color.black);
+                	yAxis = ""+(i);
+                	gp.drawLine(xLeft-3,yLeft-psthbinY*i,xLeft+3,yLeft-psthbinY*i);
+                	gp.drawString(yAxis,xLeft-10,yLeft-psthbinY*i);
+                	gp.setColor(new Color(100,100,100));
+            	}
+                if (i==num-1){
+                        //gp.setFont(f);
+                        gp.setColor(Color.black);
+                        xAxis = ""+(num*width);
+                        gp.drawLine(xLeft+psthbinX*num,yLeft-3,xLeft+psthbinX*num,yLeft+3);
+                        gp.drawString(xAxis,xLeft+psthbinX*num-5,yLeft+10);
+			gp.setColor(new Color(100,100,100));
+                }
+	}
+        for (int i=0;i<num;i++){
+		//gp.setColor(new Color(100,100,100));
+		//gp.drawLine(xLeft + psthbinX*i,yLeft,xLeft+psthbinX*i,yLeft-maxAP*psthbinY);
+                //gp.setColor(new Color(250,0,0,trans));
+                if (lowpsthNeu.get(i)!=0){
+			if ( (xLeft+psthbinX*i) >= (xLeft+neuron.getlLineX()) && (xLeft+psthbinX*i)< (xLeft+neuron.getrLineX())){
+				gp.setColor(new Color(250,0,0));
+                        }
+			else{
+				gp.setColor(new Color(100,0,0,trans));
+			}
+			gp.fillRect(xLeft+psthbinX*i,yLeft-lowpsthNeu.get(i)*psthbinY,psthbinX,lowpsthNeu.get(i)*psthbinY);
+		}
+                //gp.setColor(new Color(0,250,0,trans));
+                if (highpsthNeu.get(i)!=0){
+			if ( (xLeft+psthbinX*i) >= (xLeft+neuron.getlLineX()) && (xLeft+psthbinX*i)< (xLeft+neuron.getrLineX())){
+                                gp.setColor(new Color(0,250,0,trans));
+                        }
+                        else{
+                                gp.setColor(new Color(0,100,0,trans));
+                        }
+                        gp.fillRect(xLeft+psthbinX*i,yLeft-highpsthNeu.get(i)*psthbinY,psthbinX,highpsthNeu.get(i)*psthbinY);
+                }
+        }
+
+        
+	//DRAW DOT-RASTER
+        gp.setColor(new Color(100,100,100));
+  	for (int i=0;i<=maxSwep;i+=20){
+		if (i!=0){
+                	gp.drawLine(xLeft2,yLeft2-(int)(psthbinY2*i),psthlen2+xLeft2,yLeft2-(int)(psthbinY2*i));
+        	}
+		if (i%40==0){
+                        //gp.setFont(f);
+                        gp.setColor(Color.black);
+                        yAxis = ""+(i);
+                        gp.drawLine(xLeft2-3,yLeft2-(int)(psthbinY2*i),xLeft2+3,yLeft2-(int)(psthbinY2*i));
+                        gp.drawString(yAxis,xLeft2-10,yLeft2-(int)(psthbinY2*i));
+                        gp.setColor(new Color(100,100,100));
+                }
+                if (i==(maxSwep-1)){
+                        //gp.setFont(f);
+                        gp.setColor(Color.black);
+                        yAxis = ""+(maxSwep);
+                	gp.drawLine(xLeft2-3,yLeft2-(int)(psthbinY2*maxSwep),xLeft2+3,yLeft2-(int)(psthbinY2*maxSwep));
+                        gp.drawString(yAxis,xLeft2-10,yLeft2-(int)(psthbinY2)*(maxSwep));
+                        gp.setColor(new Color(100,100,100));
+		}
+	}
+        for (int i=0;i<=num2;i++){
+		if (i!=0){
+                	gp.drawLine(xLeft2 + psthbinX2*i,yLeft2,xLeft2+psthbinX2*i,yLeft2-(int)(maxSwep*psthbinY2));
+        	}
+		if (i%10==0){
+                        //gp.setFont(f);
+                        gp.setColor(Color.black);
+                        xAxis = ""+(i*width2);
+                        gp.drawLine(xLeft2+psthbinX2*i,yLeft2-3,xLeft2+psthbinX2*i,yLeft2+3);
+                        gp.drawString(xAxis,xLeft2+psthbinX2*i-5,yLeft2+10);
+                	gp.setColor(new Color(100,100,100));
+		}
+	}
+        //gp.setColor(new Color(250,0,0));
+	highDRCount=0;
+	lowDRCount=0;
+        for (int i=0;i<maxSwep;i++){
+		/*if (i%10==0){
+			gp.setColor(new Color(100,100,100));
+			gp.drawLine(xLeft2,yLeft2-psthbinY2*i,psthlen2+xLeft2,yLeft2-psthbinY2*i);
+	    	}*/
+		for (int j=0;j<lowDR[i].length;j++){
+                        if (lowDR[i][j]!=0){
+				if ( (int)(psthlen*lowDR[i][j]/maxDRTime)>=(neuron.getDRlLineX()) && (int)(psthlen*lowDR[i][j]/maxDRTime)< (neuron.getDRrLineX())){
+                                        lowDRCount++;
+					gp.setColor(new Color(250,0,0));
+                                }
+                                else{
+                                        gp.setColor(new Color(100,0,0,trans));
+                                }
+                                gp.fillRect(xLeft2+(int)(psthlen*lowDR[i][j]/maxDRTime)-1,yLeft2-(int)((i+1)*psthbinY2)-1,dotSize,dotSize);
+                        }
+                }
+		for (int j=0;j<highDR[i].length;j++){
+			if (highDR[i][j]!=0){
+				if ( (int)(psthlen*highDR[i][j]/maxDRTime)>=(neuron.getDRlLineX()) && (int)(psthlen*highDR[i][j]/maxDRTime)< (neuron.getDRrLineX())){
+                                	highDRCount++;
+					gp.setColor(new Color(0,250,0));
+                        	}
+                        	else{
+                                	gp.setColor(new Color(0,100,0,trans));
+                        	}
+                                gp.fillRect(xLeft2+(int)(psthlen*highDR[i][j]/maxDRTime)-1,yLeft2-(int)((i+1)*psthbinY2)-1,dotSize,dotSize);
+                        }
+                }
+        }
+
+	//DRAW RATE PSTHs
+	gp.setColor(new Color(100,100,100));
+	for (int i=0;i<=maxAPRate;i+=50){
+		if (i!=0){
+                        gp.drawLine(xLeft3,yLeft3-(int)(psthbinYr*i),psthlen+xLeft3,yLeft3-(int)(psthbinYr*i));
+                }
+                if (i%100==0){
+                        gp.setColor(Color.black);
+                        yAxis = ""+(i);
+                        gp.drawLine(xLeft3-3,yLeft3-(int)(psthbinYr*i),xLeft3+3,yLeft3-(int)(psthbinYr*i));
+                        gp.drawString(yAxis,xLeft3-10,yLeft3-(int)(psthbinYr*i));
+                        gp.setColor(new Color(100,100,100));
+                }
+                if (i==(maxAPRate-1)){
+                        gp.setColor(Color.black);
+                        yAxis = ""+(maxSwep);
+                        gp.drawLine(xLeft3-3,yLeft3-(int)(psthbinYr*maxAPRate),xLeft3+3,yLeft3-(int)(psthbinYr*maxAPRate));
+                        gp.drawString(yAxis,xLeft3-10,yLeft3-(int)(psthbinYr*maxAPRate));
+                        gp.setColor(new Color(100,100,100));
+                }	
+	}
+	for (int i=0;i<=numr;i++){
+                if (i%5==0){
+			if (i!=0){
+				gp.drawLine(xLeft3 + (int)(psthbinXr*i),yLeft3,xLeft3+(int)(psthbinXr*i),yLeft3-psthwid);
+                        }
+                        gp.setColor(Color.black);
+                        xAxis = ""+(i*widthr);
+                        gp.drawLine(xLeft3+(int)(psthbinXr*i),yLeft3-3,xLeft3+(int)(psthbinXr*i),yLeft3+3);
+                        gp.drawString(xAxis,xLeft3+(int)(psthbinXr*i)-5,yLeft3+10);
+                        gp.setColor(new Color(100,100,100));
+                }
+        }
+
+	for (int i=0;i<(numr-1);i++){
+                //if (lowpsthRateNeu.get(i)!=0.0){
+                        //if ( (xLeft3+psthbinXr*i) >= (xLeft+neuron.getlLineX()) && (xLeft+psthbinX*i)< (xLeft+neuron.getrLineX())){
+                                gp.setColor(new Color(250,0,0));
+                        /*}
+                        else{
+                                gp.setColor(new Color(100,0,0,trans));
+                        }*/
+			if ( !(lowpsthRateNeu.get(i)==0.0 && lowpsthRateNeu.get(i+1)==0.0) ){
+				gp.drawLine(xLeft3+(int)(psthbinXr*i),yLeft3-(int)(lowpsthRateNeu.get(i)*psthbinYr),xLeft3+(int)(psthbinXr*(i+1)),yLeft3-(int)(lowpsthRateNeu.get(i+1)*psthbinYr));
+                        }
+			//gp.fillRect(xLeft3+(int)(psthbinXr*i),yLeft3-(int)(lowpsthRateNeu.get(i)*psthbinYr),(int)(psthbinXr),(int)(lowpsthRateNeu.get(i)*psthbinYr));
+                //}
+                //gp.setColor(new Color(0,250,0,trans));
+                //if (highpsthRateNeu.get(i)!=0.0){
+                        //if ( (xLeft+psthbinX*i) >= (xLeft+neuron.getlLineX()) && (xLeft+psthbinX*i)< (xLeft+neuron.getrLineX())){
+                                gp.setColor(new Color(0,250,0));
+                        /*}
+                        else{
+                                gp.setColor(new Color(0,100,0,trans));
+                        }*/
+			if ( !(highpsthRateNeu.get(i)==0.0 && highpsthRateNeu.get(i+1)==0.0) ){
+				gp.drawLine(xLeft3+(int)(psthbinXr*i),yLeft3-(int)(highpsthRateNeu.get(i)*psthbinYr),xLeft3+(int)(psthbinXr*(i+1)),yLeft3-(int)(highpsthRateNeu.get(i+1)*psthbinYr));
+                        }
+			//gp.fillRect(xLeft3+(int)(psthbinXr*i),yLeft3-(int)(highpsthRateNeu.get(i)*psthbinYr),(int)(psthbinXr),(int)(highpsthRateNeu.get(i)*psthbinYr));
+                //}
+		//System.out.println(highpsthRateNeu.get(i));
+		
+                /*if (i%10==0){
+                        gp.setColor(Color.black);
+                        xAxis = ""+(i*widthr);
+                        gp.drawLine(xLeft3+psthbinX*i,yLeft-3,xLeft+psthbinX*i,yLeft+3);
+                        gp.drawString(xAxis,xLeft+psthbinX*i-5,yLeft+10);
+                }
+                if (i==num-1){
+                        //gp.setFont(f);
+                        gp.setColor(Color.black);
+                        xAxis = ""+(num*width);
+                        gp.drawLine(xLeft+psthbinX*num,yLeft-3,xLeft+psthbinX*num,yLeft+3);
+                        gp.drawString(xAxis,xLeft+psthbinX*num-5,yLeft+10);
+                }*/
+        }
+	
+
+
+	//DRAGGING LINES:
+	if (neuron.getDraggingLeft()){
+		gp.setColor(new Color(0,200,255));
+	}
+	else{
+    		gp.setColor(new Color(0,0,255));
+    	}
+	gp.drawLine(neuron.getlLineX()+xLeft,yLeft,xLeft+neuron.getlLineX(),yLeft-psthwid);
+	if (neuron.getDraggingRight()){
+                gp.setColor(new Color(0,200,200));
+        }
+        else{
+                gp.setColor(new Color(0,0,200));
+        }
+	gp.drawLine(neuron.getrLineX()+xLeft,yLeft,xLeft+neuron.getrLineX(),yLeft-psthwid);
+	if (neuron.getDRDraggingRight()){
+                gp.setColor(new Color(0,200,200));
+        }
+        else{
+                gp.setColor(new Color(0,0,200));
+        }
+	gp.drawLine(neuron.getDRrLineX()+xLeft2,yLeft,xLeft2+neuron.getDRrLineX(),yLeft-psthwid);
+	if (neuron.getDRDraggingLeft()){
+                gp.setColor(new Color(0,200,255));
+        }
+        else{
+                gp.setColor(new Color(0,0,255));
+        }
+	gp.drawLine(neuron.getDRlLineX()+xLeft2,yLeft,xLeft2+neuron.getDRlLineX(),yLeft-psthwid);
+
+	gp.setColor(Color.blue);
+	gp.drawString(""+neuron.getlLineX()*width/psthbinX,xLeft+neuron.getlLineX(),yLeft-psthwid+10);
+	gp.drawString(""+neuron.getrLineX()*width/psthbinX,xLeft+neuron.getrLineX(),yLeft-psthwid+20);
+	gp.drawString(""+(int)((double)(neuron.getDRlLineX())*width/(double)(psthbinX)),xLeft2+neuron.getDRlLineX(),yLeft-psthwid+10);
+	gp.drawString(""+(int)((double)(neuron.getDRrLineX())*width/(double)(psthbinX)),xLeft2+neuron.getDRrLineX(),yLeft-psthwid+20);
+	
+
+	//DISPLAY ACTION-POTENTIAL COUNTS
+	lowPSTHCount = countList(lowpsthNeu,neuron.getlLineX()/psthbinX,neuron.getrLineX()/psthbinX-1);
+	highPSTHCount = countList(highpsthNeu,neuron.getlLineX()/psthbinX,neuron.getrLineX()/psthbinX-1);
+	lowPSTHTot = countList(lowpsthNeu,0,lowpsthNeu.size()-1);
+	highPSTHTot = countList(highpsthNeu,0,highpsthNeu.size()-1);
+	if (lowPSTHTot!=0){
+		lowPSTHPerc = 100.0*(double)(lowPSTHCount)/(double)(countList(lowpsthNeu,0,lowpsthNeu.size()-1));
+		lowPSTHPerc = Math.round(10*lowPSTHPerc)/10.0;
+	}
+	else{
+		lowPSTHPerc = 0.0;
+	}
+	if (highPSTHTot!=0){
+                highPSTHPerc = 100.0*(double)(highPSTHCount)/(double)(countList(highpsthNeu,0,highpsthNeu.size()-1));
+		highPSTHPerc = Math.round(10*highPSTHPerc)/10.0;
+        }
+        else{
+                highPSTHPerc = 0.0;
+        }
+	if (lowPSTHTot!=0){
+                lowDRPerc = 100.0*(double)(lowDRCount)/(double)(countList(lowpsthNeu,0,lowpsthNeu.size()-1));
+                lowDRPerc = Math.round(10*lowDRPerc)/10.0;
+        }
+        else{
+                lowDRPerc = 0.0;
+        }
+	if (highPSTHTot!=0){
+                highDRPerc = 100.0*(double)(highDRCount)/(double)(countList(highpsthNeu,0,highpsthNeu.size()-1));
+                highDRPerc = Math.round(10*highDRPerc)/10.0;
+        }
+        else{
+                highDRPerc = 0.0;
+        }
+	gp.setFont(heading);
+        gp.setColor(Color.black);
+        gp.drawString(lowPSTHCount+"/"+lowPSTHTot+" ("+lowPSTHPerc+"%)",xLeft+240,yLeft-psthwid-1);
+	gp.drawString(highPSTHCount+"/"+highPSTHTot +" ("+highPSTHPerc+"%)",xLeft+335,yLeft-psthwid-1);
+	gp.drawString(lowDRCount+"/"+lowPSTHTot+" ("+lowDRPerc+"%)",xLeft2+240,yLeft-psthwid-1);
+        gp.drawString(highDRCount+"/"+highPSTHTot+" ("+highDRPerc+"%)",xLeft2+335,yLeft2-psthwid-1);	
+
+	return gp;
+  }
+  
+  public void paint(Graphics g){
+    if (dbImage == null){
+      dbImage = createImage(maxlen,maxwid);
+      dbg = dbImage.getGraphics();
+    }
+    //dbg.setFont(f);
+    dbg.setColor(new Color(255,255,255));
+    dbg.fillRect(0,0,maxlen,maxwid);
+    resetGraphPos();
+    for (int k=0; k<numNeurons;k++){
+	dbg = drawPSTH(dbg,k);
+    }
+    //dbg.setColor(new Color(0,0,255));
+    //dbg.drawLine(lLineX,yLeft,lLineX,yLeft-psthwid);
+    g.drawImage(dbImage,0,0,this);
+  }
+
+  public int round(int a){
+	if (a>180){
+                return 360;
+        }
+        else if (a>120){
+                return 180;
+        }
+        else if (a>90){
+                return 120;
+        }
+        else if(a>72){
+                return 90;
+        }
+        else if(a>60){
+                return 72;
+        }
+        else if(a>45){
+                return 60;
+        }
+        else if(a>40){
+                return 45;
+        }
+        else if(a>30){
+                return 40;
+        }
+	else if(a>20){
+                return 30;
+        }
+	else if(a>15){
+                return 20;
+        }
+	else if(a>10){
+                return 15;
+        }
+	else if(a>5){
+                return 10;
+        }
+	else{
+		return 5;
+	}
+	
+	/*if (a>200){
+		return 400;
+	}
+	else if (a>100){
+		return 200;
+	}
+	else if (a>80){
+		return 100;
+	}
+	else if(a>50){
+		return 80;
+	}
+	else if(a>40){
+		return 50;
+	}
+	else if(a>25){
+		return 40;
+	}
+	else if(a>20){
+		return 25;
+	}
+	else if(a>16){
+		return 20;
+	}
+	else if(a>10){
+		return 20;
+	}
+	else if(a>8){
+		return 10;
+	}
+	else if(a>5){
+		return 8;
+	}
+	else if(a>4){
+		return 5;
+	}
+	else if(a>2){
+		return 4;
+	}
+	else if(a>1){
+		return 2;
+	}*/
+	//return 1;
+  }
+
+  public static float max(float a, float b){
+    if (a>b){
+      return a;
+    }
+    return b;
+  }
+
+  public static int maxList(ArrayList<Integer> list){
+    int max=list.get(0);
+    for (int i=1; i<list.size(); i++){
+      if (list.get(i)>max){
+        max = list.get(i);
+      }
+    }
+    return max;
+  }
+
+  public static double maxDoubleList(ArrayList<Double> list){
+    double max=list.get(0);
+    for (int i=1; i<list.size(); i++){
+      if (list.get(i)>max){
+        max = list.get(i);
+      }
+    }
+    return max;
+  }
+
+  public static int maxListPos(ArrayList<Integer> list){
+    int max=list.get(0);
+    int pos=0;
+    for (int i=1; i<list.size(); i++){
+      if (list.get(i)>max){
+        max = list.get(i);
+	pos = i;
+      }
+    }
+    return pos;
+  }
+
+  public static int maxDoubleListPos(ArrayList<Double> list){
+    double max=list.get(0);
+    int pos=0;
+    for (int i=1; i<list.size(); i++){
+      if (list.get(i)>max){
+        max = list.get(i);
+        pos = i;
+      }
+    }
+    return pos;
+  }
+
+  public static int finalListPos(ArrayList<Double> list){
+    int pos = 0;
+    for (int i=0;i<list.size();i++){
+      if (list.get(i)!=0.0){
+	pos = i;
+      }
+    }
+    return pos;
+  } 
+	
+  public static double maxArray(double[][] list){
+    double max=list[0][0];
+    for (int i=0; i<list.length; i++){
+      for (int j=0; j<list[i].length;j++){
+        if (list[i][j]>max){
+          max = list[i][j];
+        }
+      }
+    }
+    return max;
+  }
+
+  public static int countList(ArrayList<Integer> list,int a, int b){
+	int count=0;
+	for (int i=a;i<=b;i++){
+		count += list.get(i);
+	}
+	return count;
+  }
+
+  /*public static int countArray(double[][] list,int a, int b){
+	int count=0;
+	for (int  j=0;j<list.length;j++){
+		for (int i=0;i<list[0].length;i++){
+			if (
+	*/  
+
+  public static float min(float a, float b){
+    if (a<b){
+      return a;
+    }
+    return b;
+  }
+    
+  public static void main(String [] args) throws IOException{
+    DisplayNeurons frame = new DisplayNeurons();
+    while (true){
+    	//frame.move();
+    	frame.repaint();
+    	frame.move();
+	delay(100);
+    }
+  }
+}

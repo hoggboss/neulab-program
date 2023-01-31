@@ -1,0 +1,5 @@
+#!/bin/bash
+
+javac NeuLab.java NeuronAnalysis.java GenerateDisplay.java psthClass.java openRecentTypeFilter.java fileTypeFilter.java Utils.java
+
+jar cmf NeuLab.mf NeuLab.jar *.class *.java NewPic.png openIcon.png printIcon.png saveIcon.png clearIcon.png
